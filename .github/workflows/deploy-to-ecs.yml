@@ -38,11 +38,16 @@ jobs:
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+      
+      # Step 3: Set up image tag
+      - name: Set IMAGE_TAG
+        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)" >> $GITHUB_ENV
+
 
       # Step 3: Build and push Docker image to ECR
       - name: Build, tag, and push Docker image
         run: |
-          IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)
+          # IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
