@@ -51,10 +51,13 @@ jobs:
       - name: Register new ECS Task Definition
         id: register-task
         run: |
+          # Get the current task definition ARN
           NEW_TASK_DEF=$(aws ecs register-task-definition \
             --family $TASK_DEFINITION_FAMILY \
             --requires-compatibilities "FARGATE" \
             --network-mode "awsvpc" \
+            --cpu "256" \
+            --memory "512" \
             --container-definitions "[{
               \"name\": \"$CONTAINER_NAME\",
               \"image\": \"$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG\",
