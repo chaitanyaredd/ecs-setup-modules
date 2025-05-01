@@ -1,0 +1,69 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+
+jobs:
+  deploy:
+    name: Deploy to Amazon ECS
+    runs-on: ubuntu-latest
+
+    env:  # Declare environment variables here
+      AWS_REGION: us-east-1  # Replace with your AWS region
+      ECR_REPOSITORY: awfiz  # Replace with your ECR repository name
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}  # Your AWS account ID
+      CLUSTER_NAME: awfiz-cluster  # Replace with your ECS cluster name
+      TASK_DEFINITION_FAMILY: awfiz_task  # Replace with your task definition family
+      CONTAINER_NAME: awfiz  # Replace with your container name
+      SERVICE_NAME: awfiz_service  # Replace with your ECS service name
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Amazon ECR
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Step 3: Build and push Docker image to ECR
+      - name: Build, tag, and push Docker image
+        run: |
+          IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # Step 4: Register a new ECS Task Definition
+      - name: Register new ECS Task Definition
+        id: register-task
+        run: |
+          NEW_TASK_DEF=$(aws ecs register-task-definition \
+            --family $TASK_DEFINITION_FAMILY \
+            --container-definitions "[{
+              \"name\": \"$CONTAINER_NAME\",
+              \"image\": \"$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG\",
+              \"essential\": true,
+              \"memory\": 512,
+              \"cpu\": 256,
+              \"portMappings\": [{
+                \"containerPort\": 80,
+                \"hostPort\": 80,
+                \"protocol\": \"tcp\"
+              }]
+            }]" \
+            --region $AWS_REGION)
+          echo "TASK_DEF_ARN=$(echo $NEW_TASK_DEF | jq -r '.taskDefinition.taskDefinitionArn')" >> $GITHUB_ENV
+
+      # Step 5: Update ECS Service with the new Task Definition
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster $CLUSTER_NAME \
+            --service $SERVICE_NAME \
+            --task-definition $TASK_DEF_ARN \
+            --force-new-deployment \
+            --region $AWS_REGION
