@@ -36,17 +36,17 @@ variable "container_image" {
 
 variable "container_cpu" {
   description = "Container-level CPU allocation"
-  type        = string
+  type        = number
 }
 
 variable "container_memory" {
   description = "Container-level memory allocation"
-  type        = string
+  type        = number
 }
 
 variable "memory_reservation" {
   description = "Memory reservation for the container"
-  type        = string
+  type        = number
 }
 
 variable "container_port" {

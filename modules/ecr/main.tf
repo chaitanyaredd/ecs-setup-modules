@@ -4,7 +4,7 @@ resource "aws_ecr_repository" "docker_repo" {
   force_delete         = var.force_delete         # Automatically deletes images when deleting repo
 
   image_scanning_configuration {
-    scan_on_push = var.scan_on_push               # Todo: Test this feature manually
+    scan_on_push = var.scan_on_push               # Enable image scanning on push
   }
 
   tags = var.ecr_tags

@@ -36,7 +36,7 @@ resource "aws_ecs_task_definition" "awfiz_task_def" {
   container_definitions = jsonencode([
     {
       name      = var.container_name
-      image     = var.container_image    # Todo - Update the correct docker image details
+      image     = var.container_image
       essential = true
       cpu       = var.container_cpu               # Container-level CPU (0.25 vCPU)
       memory    = var.container_memory               # Hard limit (container killed if exceeded)
@@ -67,7 +67,7 @@ resource "aws_ecs_service" "awfiz_service" {
   }
 
   load_balancer {
-    target_group_arn = var.target_group_arn #Todo: How to capture the arn of target group
+    target_group_arn = var.target_group_arn  # Replace with your target group ARN
     container_name   = "awfiz"
     container_port   = 80
   }
