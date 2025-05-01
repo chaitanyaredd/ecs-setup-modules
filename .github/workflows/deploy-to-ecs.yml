@@ -10,6 +10,10 @@ jobs:
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     env:  # Declare environment variables here
       AWS_REGION: us-east-1  # Replace with your AWS region
       ECR_REPOSITORY: awfiz  # Replace with your ECR repository name
