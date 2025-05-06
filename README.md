@@ -104,61 +104,64 @@ provider "aws" {
 Terraform will automatically use the credentials provided by the instance metadata service.
 
 ---
-### Modules
-1. VPC Module
-The vpc_setup module creates the foundational networking infrastructure for your application. It includes:
+### 1. VPC Module
+The `vpc_setup` module creates the foundational networking infrastructure for your application. It includes:
+- A **VPC** with the CIDR block `10.0.0.0/16`.
+- Two **public subnets** with CIDR blocks `10.0.1.0/24` and `10.0.2.0/24`, spread across availability zones `us-east-1a` and `us-east-1b`.
+- A **security group** that allows:
+  - SSH access from `0.0.0.0/0` (open to all, but this should be restricted in production).
+  - HTTP and HTTPS access from `0.0.0.0/0`.
 
-A VPC with the CIDR block 10.0.0.0/16.
-Two public subnets with CIDR blocks 10.0.1.0/24 and 10.0.2.0/24, spread across availability zones us-east-1a and us-east-1b.
-A security group that allows:
-SSH access from 0.0.0.0/0 (open to all, but this should be restricted in production).
-HTTP and HTTPS access from 0.0.0.0/0.
 The outputs of this module (VPC ID, subnet IDs, and security group ID) are used by other modules.
 
-2. ECR Module
-The ecr_repo module creates an Elastic Container Registry (ECR) repository named awfiz. This repository is used to store Docker images for your application.
+---
+
+### 2. ECR Module
+The `ecr_repo` module creates an **Elastic Container Registry (ECR)** repository named `awfiz`. This repository is used to store Docker images for your application.
 
 Key features:
+- **Immutable tags**: Ensures that once a tag is pushed, it cannot be overwritten.
+- **Scan on push**: Automatically scans images for vulnerabilities when they are pushed to the repository.
+- **Force delete**: Allows the repository to be deleted even if it contains images.
 
-Immutable tags: Ensures that once a tag is pushed, it cannot be overwritten.
-Scan on push: Automatically scans images for vulnerabilities when they are pushed to the repository.
-Force delete: Allows the repository to be deleted even if it contains images.
-Tags like Name and Environment are added for better resource identification.
+Tags like `Name` and `Environment` are added for better resource identification.
 
-3. ALB Module
-The alb module sets up an Application Load Balancer (ALB) to route traffic to your ECS service.
+---
+
+### 3. ALB Module
+The `alb` module sets up an **Application Load Balancer (ALB)** to route traffic to your ECS service.
 
 Key components:
+- **ALB**: Internet-facing load balancer named `awsfiz-alb`.
+- **Target Group**: Routes traffic to ECS tasks on port `80` using the `HTTP` protocol.
+- **Health Checks**: Configured to check the health of ECS tasks at the path `/` every 30 seconds, with a timeout of 5 seconds.
+- **Listener**: Listens for HTTP traffic on port `80` and forwards it to the target group.
 
-ALB: Internet-facing load balancer named awsfiz-alb.
-Target Group: Routes traffic to ECS tasks on port 80 using the HTTP protocol.
-Health Checks: Configured to check the health of ECS tasks at the path / every 30 seconds, with a timeout of 5 seconds.
-Listener: Listens for HTTP traffic on port 80 and forwards it to the target group.
 The ALB uses the subnets and security group created by the VPC module.
 
-4. ECS Module
-The ecs_cluster module deploys your Flask application to an ECS cluster.
+---
+
+### 4. ECS Module
+The `ecs_cluster` module deploys your Flask application to an **ECS cluster**.
 
 Key components:
+- **ECS Cluster**: Named `awfiz-cluster`.
+- **Task Definition**: Defines the containerized application with:
+  - **Image**: Currently set to `nginx:latest` (you need to replace this with your proprietary image).
+  - **CPU and Memory**: Allocates `512` CPU units and `1024` MB of memory for the task.
+  - **Container Port**: Exposes port `80` for the application.
+- **ECS Service**: Deploys the task to the cluster and integrates it with the ALB target group for traffic routing.
 
-ECS Cluster: Named awfiz-cluster.
-Task Definition: Defines the containerized application with:
-Image: Currently set to nginx:latest (you need to replace this with your proprietary image).
-CPU and Memory: Allocates 512 CPU units and 1024 MB of memory for the task.
-Container Port: Exposes port 80 for the application.
-ECS Service: Deploys the task to the cluster and integrates it with the ALB target group for traffic routing.
 The ECS service uses the subnets and security group from the VPC module and the target group ARN from the ALB module.
 
-How It Works
-VPC Setup: The vpc_setup module creates the networking infrastructure required for the application, including a VPC, subnets, and a security group.
-ECR Repository: The ecr_repo module creates a repository to store Docker images for the application.
-Load Balancer: The alb module sets up an Application Load Balancer to route traffic to the ECS service.
-ECS Deployment: The ecs_cluster module deploys the application to an ECS cluster, using the Docker image stored in the ECR repository.
-Updated Section for README.md
-Here’s how you can update the README.md to explain the modules:
+---
 
-This explanation provides a clear understanding of how the modules work together. Let me know if you need further refinements!
+## How It Works
 
+1. **VPC Setup**: The `vpc_setup` module creates the networking infrastructure required for the application, including a VPC, subnets, and a security group.
+2. **ECR Repository**: The `ecr_repo` module creates a repository to store Docker images for the application.
+3. **Load Balancer**: The `alb` module sets up an Application Load Balancer to route traffic to the ECS service.
+4. **ECS Deployment**: The `ecs_cluster` module deploys the application to an ECS cluster, using the Docker image stored in the ECR repository.
 ---
 
 ## Deployment Steps
